@@ -6,9 +6,9 @@ This project aims to automate a home by providing a level of convenience and sec
 
 Team Members
 
-- Souvik De - Low Power Node
+- Souvik De - [Low Power Node](https://github.com/CU-ECEN-5823/course-project-svikde)
 - Isha Sawant - [Low Power Node](https://github.com/CU-ECEN-5823/course-project-IshaS27)
-- Devansh Mittal - Friend Node
+- Devansh Mittal - [Friend Node](https://github.com/CU-ECEN-5823/course-project-devmittal)
 
 ### Friend Node - [Individual Project Documentation](https://drive.google.com/drive/u/1/folders/1KaiH6MU10pee8-20MCRns5au36piGTqI)
 
