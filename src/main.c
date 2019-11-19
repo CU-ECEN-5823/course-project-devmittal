@@ -1,25 +1,60 @@
 #include <stdbool.h>
 #include "native_gecko.h"
 #include "log.h"
+#include "letimer.h"
+#include "main.h"
+#include "cmu.h"
+#include "display.h"
+#include "myGecko.h"
+#include "gpio.h"
 
 extern void gecko_main_init();
 bool mesh_bgapi_listener(struct gecko_cmd_packet *evt);
-extern void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt);
 
 int main(void)
 {
+	int comp0, comp1;
+	float led_period;
 
-  // Initialize stack
-  gecko_main_init();
+	/* Variable defining the blocked sleep mode
+	* Eg: sleepEM3 indicates that the system should be in EM2; EM3 and EM4 is blocked.
+	* Note: Ensure to cycle power (move switch to BAT and back to AEM) after uploading code when changing energy modes*/
+	const SLEEP_EnergyMode_t sleep_mode_blocked=sleepEM4;
 
-  logInit();
+	// Initialize stack
+	gecko_main_init();
 
-  /* Infinite loop */
-  while (1) {
-	struct gecko_cmd_packet *evt = gecko_wait_event();
-	bool pass = mesh_bgapi_listener(evt);
-	if (pass) {
-		handle_gecko_event(BGLIB_MSG_ID(evt->header), evt);
+	logInit();
+
+	// Initialize GPIO
+	gpioInit();
+
+	led_period = PERIOD;
+
+	if(sleep_mode_blocked == sleepEM4)
+		freq = ULFRCO_FREQ;
+	else
+		freq = LXFO_FREQ;
+
+	// Initialize clocks
+	clk_div = clockInit(sleep_mode_blocked, led_period, freq);
+
+	comp0 = LETIMER_VALUE_FROM_TIME(PERIOD, freq, clk_div);
+	comp1 = comp0 - LETIMER_VALUE_FROM_TIME(ON_TIME, freq, clk_div);
+
+	// Initialize Letimer
+	letimerInit(comp0, comp1, sleep_mode_blocked);
+
+	displayInit();
+
+	/* Infinite loop */
+	while (1)
+	{
+		struct gecko_cmd_packet *evt = gecko_wait_event();
+		bool pass = mesh_bgapi_listener(evt);
+		if (pass)
+		{
+			gecko_ecen5823_update(BGLIB_MSG_ID(evt->header), evt);
+		}
 	}
-  };
 }

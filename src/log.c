@@ -7,6 +7,8 @@
 
 #include "retargetserial.h"
 #include "log.h"
+#include "main.h"
+#include "em_letimer.h"
 #include <stdbool.h>
 
 #if INCLUDE_LOGGING
@@ -16,8 +18,11 @@
  */
 uint32_t loggerGetTimestamp(void)
 {
-	//return timerGetRunTimeMilliseconds();
-	return 0;
+	uint32_t ticks;
+
+	ticks = LETIMER_CompareGet(LETIMER0, 0) - LETIMER_CounterGet(LETIMER0);
+
+	return (TimeStamp_count * PERIOD) + TIME_FROM_LETIMER_TICKS(ticks, freq, clk_div);
 }
 
 /**

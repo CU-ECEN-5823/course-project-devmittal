@@ -18,6 +18,7 @@
 #include "gpio.h"
 #include "log.h"
 #include "display.h"
+#include "letimer.h"
 #include "hardware/kit/common/drivers/display.h"
 //#include "scheduler.h" // Add a reference to your module supporting scheduler events for display update
 //#include "timer.h" // Add a reference to your module supporting configuration of underflow events here
@@ -198,7 +199,7 @@ void displayInit()
 	}
 #if SCHEDULER_SUPPORTS_DISPLAY_UPDATE_EVENT
 #if TIMER_SUPPORTS_1HZ_TIMER_EVENT
-	timerEnable1HzSchedulerEvent(Scheduler_DisplayUpdate);
+	timerEnable1HzSchedulerEvent();
 #else
 #warning "Timer does not support scheduling 1Hz event.  Please implement for full display support"
 #endif
@@ -222,7 +223,7 @@ bool displayUpdate()
 #else
 #warning "gpioSetDisplayExtcomin is not implemented.  Please implement for display support"
 #endif
-	LOG_DEBUG("Display extcomin state is now %s",display->last_extcomin_state_high ? "high" : "low");
+	//LOG_INFO("Display extcomin state is now %s",display->last_extcomin_state_high ? "high" : "low");
 	return true;
 }
 

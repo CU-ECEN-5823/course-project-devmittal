@@ -10,6 +10,8 @@
 #include "stdio.h"
 #include <inttypes.h>
 
+volatile uint32_t TimeStamp_count;
+
 /**
  * Instructions for using this module:
  * 1) #include "log.h" in the C file where you'd like to add logging

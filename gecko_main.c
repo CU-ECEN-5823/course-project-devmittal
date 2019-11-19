@@ -45,6 +45,7 @@
 #include "bspconfig.h"
 #endif
 #include "src/ble_mesh_device_type.h"
+#include "src/main.h"
 
 /***********************************************************************************************//**
  * @addtogroup Application
