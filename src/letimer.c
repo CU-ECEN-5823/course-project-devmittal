@@ -92,14 +92,22 @@ void letimerInit(int comp0, int comp1, SLEEP_EnergyMode_t sleep_mode_blocked)
 			false,				//buftop - Don't load COMP1 into COMP0
 			0,					//idle value for output 0
 			0, 					//idle value for output 1
-			letimerUFOANone,    //No underflow output 0 action
+			letimerUFOAPwm,    //No underflow output 0 action
 			letimerUFOANone,	//No underflow output 1 action
 			letimerRepeatFree,	//Repeat mode - none
 	};
 
+	LETIMER0->ROUTELOC0 |= LETIMER_ROUTELOC0_OUT0LOC_LOC18;
+	LETIMER0->ROUTEPEN |= LETIMER_ROUTEPEN_OUT0PEN;
+
+	/* Repetition values must be nonzero so that the outputs
+ 	 return switch between idle and active state */
+	LETIMER_RepeatSet(LETIMER0, 0, 0x01);
+	LETIMER_RepeatSet(LETIMER0, 1, 0x01);
+
 	LETIMER_Init(LETIMER0, &LETIMER_CONFIG);
 	LETIMER_CompareSet(LETIMER0, 0, comp0);
-	LETIMER_CompareSet(LETIMER0, 1, 0xFFFF); //Set it with the highest value to prevent comp1 flag from being set
+	LETIMER_CompareSet(LETIMER0, 1, 29491); //Set it with the highest value to prevent comp1 flag from being set
 
 	//LETIMER_IntEnable(LETIMER0, (LETIMER_IEN_UF)); //Interrupt when under flow
 	NVIC_EnableIRQ(LETIMER0_IRQn);

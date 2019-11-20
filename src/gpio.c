@@ -19,6 +19,10 @@ void gpioInit()
 	/* Configure PB0 and PB1 as input */
 	GPIO_PinModeSet(PB0_port, PB0_pin, gpioModeInput, 1);
 	GPIO_PinModeSet(PB1_port, PB1_pin, gpioModeInput, 1);
+
+	/* Configure User LED as output */
+	GPIO_PinModeSet(EXTCOMIN_port, USER_LED_pin, gpioModePushPull, false);
+	GPIO_PinModeSet(PB0_port, BUZZER_pin, gpioModePushPull, false);
 }
 
 void gpioLed0SetOn()
@@ -41,6 +45,16 @@ void gpioLed1SetOff()
 void gpioEnableDisplay()
 {
 	GPIO_PinOutSet(SENSOR_ENABLE_port, SENSOR_ENABLE_pin);
+}
+
+void gpioUsrLED(uint8_t stat)
+{
+	stat ? GPIO_PinOutSet(EXTCOMIN_port, USER_LED_pin) : GPIO_PinOutClear(EXTCOMIN_port, USER_LED_pin);
+}
+
+void gpioBuzzer(uint8_t stat)
+{
+	stat ? GPIO_PinOutSet(PB0_port, BUZZER_pin) : GPIO_PinOutClear(PB0_port, BUZZER_pin);
 }
 
 void gpioSetDisplayExtcomin(bool high)

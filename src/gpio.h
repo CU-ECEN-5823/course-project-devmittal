@@ -18,6 +18,8 @@
 #define PB0_pin				6
 #define PB1_port		   gpioPortF
 #define PB1_pin				7
+#define USER_LED_pin		10
+#define BUZZER_pin 			3
 
 #define GPIO_SET_DISPLAY_EXT_COMIN_IMPLEMENTED 	1
 #define GPIO_DISPLAY_SUPPORT_IMPLEMENTED		1
@@ -29,5 +31,7 @@ void gpioLed0SetOff();
 void gpioLed1SetOn();
 void gpioLed1SetOff();
 void gpioEnableDisplay();
+void gpioUsrLED(uint8_t stat);
+void gpioBuzzer(uint8_t stat);
 void gpioSetDisplayExtcomin(bool high);
 #endif /* SRC_GPIO_H_ */

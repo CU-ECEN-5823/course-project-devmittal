@@ -7,6 +7,7 @@
 #include "display.h"
 #include "myGecko.h"
 #include "gpio.h"
+#include "led.h"
 
 extern void gecko_main_init();
 bool mesh_bgapi_listener(struct gecko_cmd_packet *evt);
@@ -19,7 +20,7 @@ int main(void)
 	/* Variable defining the blocked sleep mode
 	* Eg: sleepEM3 indicates that the system should be in EM2; EM3 and EM4 is blocked.
 	* Note: Ensure to cycle power (move switch to BAT and back to AEM) after uploading code when changing energy modes*/
-	const SLEEP_EnergyMode_t sleep_mode_blocked=sleepEM4;
+	const SLEEP_EnergyMode_t sleep_mode_blocked=sleepEM3;
 
 	// Initialize stack
 	gecko_main_init();
@@ -29,7 +30,9 @@ int main(void)
 	// Initialize GPIO
 	gpioInit();
 
-	led_period = PERIOD;
+	timer_pwm();
+
+	/*led_period = PERIOD;
 
 	if(sleep_mode_blocked == sleepEM4)
 		freq = ULFRCO_FREQ;
@@ -47,14 +50,16 @@ int main(void)
 
 	displayInit();
 
+	test_led();*/
+
 	/* Infinite loop */
 	while (1)
 	{
-		struct gecko_cmd_packet *evt = gecko_wait_event();
+		/*struct gecko_cmd_packet *evt = gecko_wait_event();
 		bool pass = mesh_bgapi_listener(evt);
 		if (pass)
 		{
 			gecko_ecen5823_update(BGLIB_MSG_ID(evt->header), evt);
-		}
+		}*/
 	}
 }
