@@ -30,9 +30,9 @@ int main(void)
 	// Initialize GPIO
 	gpioInit();
 
-	timer_pwm();
+	//timer_pwm(); //Function outputs PWM using TIMER module in a linear manner and sounds buzzer
 
-	/*led_period = PERIOD;
+	led_period = PERIOD;
 
 	if(sleep_mode_blocked == sleepEM4)
 		freq = ULFRCO_FREQ;
@@ -50,16 +50,16 @@ int main(void)
 
 	displayInit();
 
-	test_led();*/
+	test_led(); //This outputs PWM using LETIMER. Duty cycle depends on comp1 value
 
 	/* Infinite loop */
 	while (1)
 	{
-		/*struct gecko_cmd_packet *evt = gecko_wait_event();
+		struct gecko_cmd_packet *evt = gecko_wait_event();
 		bool pass = mesh_bgapi_listener(evt);
 		if (pass)
 		{
 			gecko_ecen5823_update(BGLIB_MSG_ID(evt->header), evt);
-		}*/
+		}
 	}
 }

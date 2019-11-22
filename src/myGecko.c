@@ -2,8 +2,8 @@
 ​ ​* ​ ​ @file​ ​  		myGecko.c
 ​ * ​ ​ @brief​ ​ 		Contains BT stack event handler
 ​ * ​ ​ @Author(s)​  	​​Devansh Mittal
-​ * ​ ​ @Date​ ​​ 		October 4th, 2019
-​ * ​ ​ @version​ ​ 		2.0
+​ * ​ ​ @Date​ ​​ 		November 20th, 2019
+​ * ​ ​ @version​ ​ 		3.0
  *   @References 	soc-btmesh-light example project from SI BT mesh SDK
  *   				soc-btmesh-switch example project from SI BT mesh SDK
 *****************************************************************************/
@@ -23,6 +23,7 @@
 #include "event.h"
 #include "mesh_generic_model_capi_types.h"
 #include "mesh_lib.h"
+#include "mesh_lighting_model_capi_types.h"
 
 /*
  * @func - onoff_update
@@ -146,39 +147,11 @@ static void onoff_change(uint16_t model_id,
 	}
 }
 
-void lpn_init(void)
+void init_models()
 {
-	// Do not initialize LPN if lpn is currently active
-	// or any GATT connection is opened
-	if (lpn_active || num_connections)
-		return;
-
-	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_lpn_init());
-
-	lpn_active = 1;
-	LOG_INFO("LPN Initialized\n");
-
-	// Configure the lpn with following parameters:
-	// - Minimum friend queue length = 2
-	// - Poll timeout = 5 seconds
-	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_lpn_configure(2, 5 * 1000));
-
-	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_lpn_establish_friendship(0));
-}
-
-void lpn_deinit(void)
-{
-	uint16 result;
-
-	if (!lpn_active)
-		return; // lpn feature is currently inactive
-
-	// Terminate friendship if exist
-	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_lpn_terminate_friendship());
-	// turn off lpn feature
-	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_lpn_deinit());
-	lpn_active = 0;
-	LOG_INFO("LPN deinitialized\r\n");
+	mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID, 0, onoff_request, onoff_change);
+	//mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID, 0, level_request, level_change);
+	//mesh_lib_generic_server_register_handler(MESH_LIGHTING_LIGHTNESS_SERVER_MODEL_ID, 0, lightness_request, lightness_change);
 }
 
 /*
@@ -189,31 +162,16 @@ void lpn_deinit(void)
  */
 void init_mesh(void)
 {
-	if(DeviceUsesClientModel())
-	{
-		BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_generic_client_init());
-	}
+	uint16_t _primary_elem_index = 0;
 
-	if(DeviceUsesServerModel())
-	{
-		BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_generic_server_init());
-	}
+	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_generic_server_init());
 
-	if(DeviceIsOnOffPublisher())
-	{
-		mesh_lib_init(malloc,free,8);
-	}
-
-	if(DeviceIsOnOffSubscriber())
-	{
-		uint16_t _primary_elem_index = 0;
-
-		mesh_lib_init(malloc,free,9);
-		BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_friend_init());
-		button_state.onoff_current = 0;
-		mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID, 0, onoff_request, onoff_change);
-		onoff_update_and_publish(_primary_elem_index, 0);
-	}
+	mesh_lib_init(malloc,free,9);
+	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_friend_init());
+	button_state.onoff_current = 0;
+	init_models();
+	mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID, 0, onoff_request, onoff_change);
+	onoff_update_and_publish(_primary_elem_index, 0);
 }
 
 /***************************************************************************//**
@@ -256,20 +214,17 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 	 	{
 	 		/* Set attributes to init device */
 			char name[20];
+			uint8_t bedroom_lpn_addr[] = BEDROOM_LPN_BT_ADDRESS;
+			uint8_t kitchen_lpn_addr[] = KITCHEN_LPN_BT_ADDRESS;
 
 			struct gecko_msg_system_get_bt_address_rsp_t *bt_public_addr = gecko_cmd_system_get_bt_address();
 			displayPrintf(DISPLAY_ROW_BTADDR, "%x.%x.%x.%x.%x.%x", bt_public_addr->address.addr[5],bt_public_addr->address.addr[4],bt_public_addr->address.addr[3],bt_public_addr->address.addr[2],bt_public_addr->address.addr[1],bt_public_addr->address.addr[0]);
+			displayPrintf(DISPLAY_ROW_BTADDR2, "%x.%x.%x.%x.%x.%x", kitchen_lpn_addr[5],kitchen_lpn_addr[4],kitchen_lpn_addr[3],kitchen_lpn_addr[2],kitchen_lpn_addr[1],kitchen_lpn_addr[0]);
+			displayPrintf(DISPLAY_ROW_BTADDR3, "%x.%x.%x.%x.%x.%x", bedroom_lpn_addr[5],bedroom_lpn_addr[4],bedroom_lpn_addr[3],bedroom_lpn_addr[2],bedroom_lpn_addr[1],bedroom_lpn_addr[0]);
 
-			if(DeviceIsOnOffPublisher())
-			{
-				displayPrintf(DISPLAY_ROW_NAME, "Publisher");
-				sprintf(name, "5823Pub %02x:%02x", bt_public_addr->address.addr[1],bt_public_addr->address.addr[0]);
-			}
-			else
-			{
-				displayPrintf(DISPLAY_ROW_NAME, "Subscriber");
-				sprintf(name, "5823Sub %02x:%02x", bt_public_addr->address.addr[1],bt_public_addr->address.addr[0]);
-			}
+			displayPrintf(DISPLAY_ROW_NAME, "Friend Node");
+			sprintf(name, "5823Pub %02x:%02x", bt_public_addr->address.addr[1],bt_public_addr->address.addr[0]);
+
 			LOG_INFO("Device name: '%s'\r\n", name);
 			BTSTACK_CHECK_RESPONSE(gecko_cmd_gatt_server_write_attribute_value(gattdb_device_name, 0, strlen(name), (uint8_t *)name));
 	 	}
@@ -283,12 +238,9 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			 LOG_INFO("Already provisioned\n");
 			 elem_index = 0;
 			 init_mesh();
-			 if(DeviceIsOnOffPublisher())
-			 {
-				 lpn_init();
-			 }
 		 }
 		 break;
+
 	 case gecko_evt_mesh_node_provisioning_started_id:
 
 		 displayPrintf(DISPLAY_ROW_ACTION, "Provisioning");
@@ -308,23 +260,18 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 	 case gecko_evt_mesh_generic_server_client_request_id:
 
-		 if(DeviceUsesServerModel())
-			 mesh_lib_generic_server_event_handler(evt);
+		 mesh_lib_generic_server_event_handler(evt);
 		 break;
 
 	 case gecko_evt_mesh_generic_server_state_changed_id:
 
-		 if(DeviceUsesServerModel())
-			 mesh_lib_generic_server_event_handler(evt);
+		 mesh_lib_generic_server_event_handler(evt);
 		 break;
 
 	 case gecko_evt_le_connection_opened_id:
 
 		 num_connections++;
 		 displayPrintf(DISPLAY_ROW_CONNECTION, "Connected");
-
-		 if(DeviceIsOnOffPublisher())
-			 lpn_deinit();
 		 break;
 
 	 case gecko_evt_le_connection_closed_id:
@@ -334,21 +281,16 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			 if (--num_connections == 0)
 			 {
 				 displayPrintf(DISPLAY_ROW_CONNECTION, "");
-				 if(DeviceIsOnOffPublisher())
-					 lpn_init(); // initialize lpn when there is no active connection
 			 }
 		 }
 		 break;
 
 	 case gecko_evt_mesh_node_reset_id:
 
-	       initiate_factory_reset();
-	       break;
+		 initiate_factory_reset();
+		 break;
 
 	 case gecko_evt_system_external_signal_id: ;
-
-		 struct mesh_generic_request req;
-		 static uint32_t trid = 0;
 
 		 /* Handle display update timer interrupt */
 		 if(((evt->data.evt_system_external_signal.extsignals & DISPLAY_UPDATE) == DISPLAY_UPDATE))
@@ -358,13 +300,24 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		 break;
 
 	 case gecko_evt_hardware_soft_timer_id:
-		switch (evt->data.evt_hardware_soft_timer.handle)
-		{
+
+		 switch (evt->data.evt_hardware_soft_timer.handle)
+		 {
 			case TIMER_ID_FACTORY_RESET:
 				// reset the device to finish factory reset
 				gecko_cmd_system_reset(0);
 				break;
-		}
-		break;
+		 }
+		 break;
+
+	 case gecko_evt_mesh_friend_friendship_established_id:
+
+		 LOG_INFO("evt gecko_evt_mesh_friend_friendship_established, lpn_address=%x\r\n", evt->data.evt_mesh_friend_friendship_established.lpn_address);
+		 break;
+
+	 case gecko_evt_mesh_friend_friendship_terminated_id:
+
+		 LOG_INFO("evt gecko_evt_mesh_friend_friendship_terminated, reason=%x\r\n", evt->data.evt_mesh_friend_friendship_terminated.reason);
+		 break;
 	}
 }
