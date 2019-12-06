@@ -11,9 +11,9 @@
 #include "em_timer.h"
 #include "log.h"
 
-void test_led(void)
+void set_duty_cycle(int duty_cycle)
 {
-	gpioUsrLED(1);
+	TIMER_CompareBufSet(TIMER0, 0, TIMER_TopGet(TIMER0) * duty_cycle);
 }
 
 void TIMER0_IRQHandler(void)
@@ -64,6 +64,7 @@ void timer_pwm()
 	LOG_INFO("Timer value: %lu", (CMU_ClockFreqGet(cmuClock_HFPER)/10000));
 
 	/* Set compare value starting at 0 - it will be incremented in the interrupt handler */
+	//TIMER_CompareBufSet(TIMER0, 0, (CMU_ClockFreqGet(cmuClock_HFPER)/100000));
 	TIMER_CompareBufSet(TIMER0, 0, 0);
 
 	/* Select timer parameters */
@@ -83,7 +84,7 @@ void timer_pwm()
 	};
 
 	/* Enable overflow interrupt */
-	TIMER_IntEnable(TIMER0, TIMER_IF_OF);
+	//TIMER_IntEnable(TIMER0, TIMER_IF_OF);
 
 	/* Enable TIMER0 interrupt vector in NVIC */
 	NVIC_EnableIRQ(TIMER0_IRQn);
@@ -91,5 +92,5 @@ void timer_pwm()
 	/* Configure timer */
 	TIMER_Init(TIMER0, &timerInit);
 
-	gpioBuzzer(1);
+	//gpioBuzzer(1);
 }

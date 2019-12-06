@@ -14,10 +14,10 @@
  * Set to 1 to build an on/off publisher client model for Assignment 10
  * Set to 0 to build an on/off subscriber server model for Assignment 10
  */
-#define DEVICE_IS_ONOFF_PUBLISHER			1
+#define DEVICE_IS_ONOFF_PUBLISHER			0
 
-#define KITCHEN_LPN_BT_ADDRESS	{{ 0x60, 0xf2, 0xb5, 0x57, 0x0b, 0x00 }}
-#define BEDROOM_LPN_BT_ADDRESS	{{ 0x60, 0xf2, 0xb5, 0x57, 0x0b, 0x00 }}
+#define KITCHEN_LPN_BT_ADDRESS	{ 0x60, 0xf2, 0xb5, 0x57, 0x0b, 0x00 }
+#define BEDROOM_LPN_BT_ADDRESS	{ 0x60, 0xf2, 0xb5, 0x57, 0x0b, 0x00 }
 
 #if DEVICE_IS_ONOFF_PUBLISHER
 #define DEVICE_USES_BLE_MESH_CLIENT_MODEL 	1
@@ -29,7 +29,7 @@
 #endif
 
 #define DEVICE_IS_BLE_MESH_LPN 				0
-#define DEVICE_IS_BLE_MESH_FRIEND 			0
+#define DEVICE_IS_BLE_MESH_FRIEND 			1
 
 
 #if DEVICE_IS_BLE_MESH_LPN

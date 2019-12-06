@@ -24,53 +24,7 @@
 #include "mesh_generic_model_capi_types.h"
 #include "mesh_lib.h"
 #include "mesh_lighting_model_capi_types.h"
-
-/*
- * @func - onoff_update
- * @brief - Update generic on/off state.
- * @parameters - element_index Server model element index
- * 				 remaining_ms The remaining time in milliseconds.
- * @return - Status of the update operation
- */
-static errorcode_t onoff_update(uint16_t element_index, uint32_t remaining_ms)
-{
-	struct mesh_generic_state current, target;
-
-	current.kind = mesh_generic_state_on_off;
-	current.on_off.on = button_state.onoff_current;
-
-	target.kind = mesh_generic_state_on_off;
-	target.on_off.on = button_state.onoff_target;
-
-	return mesh_lib_generic_server_update(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-										element_index,
-										&current,
-										&target,
-										remaining_ms);
-}
-
-/*
- * @func - onoff_update_and_publish
- * @brief - Update generic on/off state and publish model state to the network.
- * @parameters - element_index Server model element index
- * 				 remaining_ms The remaining time in milliseconds.
- * @return - Status of the update operation
- */
-static errorcode_t onoff_update_and_publish(uint16_t element_index,
-                                            uint32_t remaining_ms)
-{
-	errorcode_t e;
-
-	e = onoff_update(element_index, remaining_ms);
-
-	if (e == bg_err_success) {
-	e = mesh_lib_generic_server_publish(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-										element_index,
-										mesh_generic_state_on_off);
-	}
-
-	return e;
-}
+#include "led.h"
 
 /***************************************************************************//**
  * This function process the requests for the generic on/off model.
@@ -99,24 +53,33 @@ static void onoff_request(uint16_t model_id,
                           uint16_t delay_ms,
                           uint8_t request_flags)
 {
-	LOG_INFO("ON/OFF request: requested state=<%s>\r\n", request->on_off ? "Pressed" : "Released");
-	if (button_state.onoff_current == request->on_off)
+	if(client_addr == KITCHEN_NODE_ADDR)
 	{
-	    LOG_INFO("Request for current state received; no op\r\n");
+		LOG_INFO("Flame alert received from kitchen node");
+		displayPrintf(DISPLAY_ROW_GASVALUE, "HIGH GAS LEVEL - %d", request->level);
+		gpioBuzzer(1);
+		gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_STOP_BUZZER, 1);
+		buzzer_count++;
+
+		store_flash(BUZZER_COUNT_FLASH_ADDR, buzzer_count);
 	}
 	else
 	{
-		LOG_INFO("Button change to <%s>\r\n", request->on_off ? "Pressed" : "Released");
+		LOG_INFO("Change in motion sensor");
 
-		if (transition_ms == 0 && delay_ms == 0)
-		{ // Immediate change
-			button_state.onoff_current = request->on_off;
-			button_state.onoff_target = request->on_off;
+		LOG_INFO("Motion: %d", request->on_off);
+		LOG_INFO("Client Addr: %d", client_addr);
 
-			request->on_off ? displayPrintf(DISPLAY_ROW_ACTION, "Button Pressed") : displayPrintf(DISPLAY_ROW_ACTION, "Button Released");
+		if(request->level)
+		{
+
+		}
+		else
+		{
+			set_duty_cycle(0);
+			last_lightness = 0;
 		}
 	}
-	onoff_update_and_publish(element_index, 0);
 }
 
 /***************************************************************************//**
@@ -135,7 +98,7 @@ static void onoff_change(uint16_t model_id,
                          const struct mesh_generic_state *target,
                          uint32_t remaining_ms)
 {
-	if (current->on_off.on != button_state.onoff_current)
+	/*if (current->on_off.on != button_state.onoff_current)
 	{
 		LOG_INFO("on-off state changed %u to %u\r\n", button_state.onoff_current, current->on_off.on);
 
@@ -144,13 +107,86 @@ static void onoff_change(uint16_t model_id,
 	else
 	{
 		LOG_INFO("dummy onoff change - same state as before\r\n");
+	}*/
+}
+
+static void level_request(uint16_t model_id,
+                              uint16_t element_index,
+                              uint16_t client_addr,
+                              uint16_t server_addr,
+                              uint16_t appkey_index,
+                              const struct mesh_generic_request *request,
+                              uint32_t transition_ms,
+                              uint16_t delay_ms,
+                              uint8_t request_flags)
+{
+	if(client_addr == KITCHEN_NODE_ADDR)
+	{
+		LOG_INFO("Gas Level alert received from kitchen low power node: %d", request->level);
+		LOG_INFO("Addr of sender %d", client_addr);
+
+		displayPrintf(DISPLAY_ROW_GASVALUE, "HIGH GAS LEVEL - %d", request->level);
+		gpioBuzzer(1);
+		gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_STOP_BUZZER, 1);
+		buzzer_count++;
+
+		store_flash(BUZZER_COUNT_FLASH_ADDR, buzzer_count);
+	}
+	else
+	{
+		LOG_INFO("Change in light intensity: %d", request->level);
+		LOG_INFO("Addr of sender %d", client_addr);
+
+		displayPrintf(DISPLAY_ROW_LIGHTVALUE, "Lumen - %d", request->level);
+
+		//Call duty cycle func. Decide on formula
+	}
+}
+
+/***************************************************************************//**
+ * This function is a handler for generic level change event
+ * on primary element.
+ *
+ * @param[in] model_id       Server model ID.
+ * @param[in] element_index  Server model element index.
+ * @param[in] current        Pointer to current state structure.
+ * @param[in] target         Pointer to target state structure.
+ * @param[in] remaining_ms   Time (in milliseconds) remaining before transition
+ *                           from current state to target state is complete.
+ ******************************************************************************/
+static void level_change(uint16_t model_id,
+                             uint16_t element_index,
+                             const struct mesh_generic_state *current,
+                             const struct mesh_generic_state *target,
+                             uint32_t remaining_ms)
+{
+	/*if(button_state.pri_level_current != current->level.level)
+  	{
+    	LOG_INFO("pri_level_change: from %d to %d\r\n", button_state.pri_level_current, current->level.level);
+    	button_state.pri_level_current = current->level.level;
+    }
+	else
+	{
+    	LOG_INFO("pri_level update -same value (%d)\r\n", home_automation.level_current);
+	}*/
+}
+
+void store_flash(int addr, uint32_t val)
+{
+	struct gecko_msg_flash_ps_save_rsp_t* pSave;
+
+	pSave = gecko_cmd_flash_ps_save(addr, sizeof(uint32_t), (const uint8*)&val);
+
+	if (pSave->result)
+	{
+		LOG_INFO("PS save failed, code %x\r\n", pSave->result);
 	}
 }
 
 void init_models()
 {
 	mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID, 0, onoff_request, onoff_change);
-	//mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID, 0, level_request, level_change);
+	mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID, 0, level_request, level_change);
 	//mesh_lib_generic_server_register_handler(MESH_LIGHTING_LIGHTNESS_SERVER_MODEL_ID, 0, lightness_request, lightness_change);
 }
 
@@ -159,19 +195,48 @@ void init_models()
  * @brief - Initialize Server/Client parameters.
  * @parameters - void.
  * @return - void.
+ *
+ * Gas sensor - greater than 650, trigger buzzer. stop after 2 seconds
+ * flame sensor - on off model, 1 - buzzer on. stop after 2 seconds.
  */
 void init_mesh(void)
 {
-	uint16_t _primary_elem_index = 0;
+	struct gecko_msg_flash_ps_load_rsp_t* pLoad;
 
+	mesh_lib_init(malloc,free,8);
 	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_generic_server_init());
-
-	mesh_lib_init(malloc,free,9);
 	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_friend_init());
-	button_state.onoff_current = 0;
+
+	/* Load data from flash */
+	pLoad = gecko_cmd_flash_ps_load(BUZZER_COUNT_FLASH_ADDR);
+
+	if (pLoad->result)
+	{
+		LOG_INFO("Failed to load buzzer value from flash");
+	}
+	else
+	{
+		displayPrintf(DISPLAY_ROW_STATUS, "Flash Stats:");
+		displayPrintf(DISPLAY_ROW_FLASH1, "Buzzer: %d", pLoad->value.data[0]);
+	}
+
+	pLoad = gecko_cmd_flash_ps_load(LAST_LIGHT_FLASH_ADDR);
+	if (pLoad->result)
+	{
+		LOG_INFO("Failed to load last light value from flash from flash");
+		last_lightness = 50;
+	}
+	else
+	{
+		//Call function to set duty cycle based on value in flash
+	}
+
+	buzzer_count = 0;
+
+	/* Reset flash to 0 after displaying the stats */
+	store_flash(BUZZER_COUNT_FLASH_ADDR, buzzer_count);
+
 	init_models();
-	mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID, 0, onoff_request, onoff_change);
-	onoff_update_and_publish(_primary_elem_index, 0);
 }
 
 /***************************************************************************//**
@@ -214,6 +279,7 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 	 	{
 	 		/* Set attributes to init device */
 			char name[20];
+
 			uint8_t bedroom_lpn_addr[] = BEDROOM_LPN_BT_ADDRESS;
 			uint8_t kitchen_lpn_addr[] = KITCHEN_LPN_BT_ADDRESS;
 
@@ -223,6 +289,7 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			displayPrintf(DISPLAY_ROW_BTADDR3, "%x.%x.%x.%x.%x.%x", bedroom_lpn_addr[5],bedroom_lpn_addr[4],bedroom_lpn_addr[3],bedroom_lpn_addr[2],bedroom_lpn_addr[1],bedroom_lpn_addr[0]);
 
 			displayPrintf(DISPLAY_ROW_NAME, "Friend Node");
+
 			sprintf(name, "5823Pub %02x:%02x", bt_public_addr->address.addr[1],bt_public_addr->address.addr[0]);
 
 			LOG_INFO("Device name: '%s'\r\n", name);
@@ -236,7 +303,6 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		 if (evt->data.evt_mesh_node_initialized.provisioned)
 		 {
 			 LOG_INFO("Already provisioned\n");
-			 elem_index = 0;
 			 init_mesh();
 		 }
 		 break;
@@ -248,7 +314,6 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 	 case gecko_evt_mesh_node_provisioned_id:
 
-		 elem_index = 0;
 		 init_mesh();
 		 displayPrintf(DISPLAY_ROW_ACTION, "Provisioned");
 		 break;
@@ -307,6 +372,11 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				// reset the device to finish factory reset
 				gecko_cmd_system_reset(0);
 				break;
+
+			case TIMER_ID_STOP_BUZZER:
+				//Stop buzzer
+				gpioBuzzer(1);
+				displayPrintf(DISPLAY_ROW_GASVALUE, "");
 		 }
 		 break;
 

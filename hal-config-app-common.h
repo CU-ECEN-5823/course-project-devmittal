@@ -25,10 +25,6 @@
 #include "hal-config-ioexp.h"
 #endif
 
-#if defined(FEATURE_FEM)
-#include "hal-config-fem.h"
-#endif
-
 #define HAL_EXTFLASH_FREQUENCY                        (1000000)
 
 #define HAL_PA_ENABLE                                 (1)
@@ -55,4 +51,11 @@
 #define HAL_PA_VOLTAGE                                (1800)
 #endif // FEATURE_PA_HIGH_POWER
 
+
+
+// Select antenna path on EFR32xG2x devices:
+//   - RF2G2_IO1: 0
+//   - RF2G2_IO2: 1
+#define GECKO_RF_ANTENNA   1
+                          
 #endif /* HAL_CONFIG_APP_COMMON_H */

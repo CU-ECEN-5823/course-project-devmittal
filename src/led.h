@@ -10,5 +10,6 @@
 
 void test_led(void);
 void timer_pwm();
+void set_duty_cycle(int duty_cycle);
 
 #endif /* SRC_LED_H_ */

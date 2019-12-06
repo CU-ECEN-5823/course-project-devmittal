@@ -30,7 +30,9 @@ int main(void)
 	// Initialize GPIO
 	gpioInit();
 
-	//timer_pwm(); //Function outputs PWM using TIMER module in a linear manner and sounds buzzer
+	buzzer_count = 0; //Init buzzer counter to 0
+
+	timer_pwm(); //Function outputs PWM using TIMER module in a linear manner and sounds buzzer
 
 	led_period = PERIOD;
 
@@ -50,7 +52,7 @@ int main(void)
 
 	displayInit();
 
-	test_led(); //This outputs PWM using LETIMER. Duty cycle depends on comp1 value
+	//test_led(); //This outputs PWM using LETIMER. Duty cycle depends on comp1 value
 
 	/* Infinite loop */
 	while (1)

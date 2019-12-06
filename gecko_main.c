@@ -46,6 +46,7 @@
 #endif
 #include "src/ble_mesh_device_type.h"
 #include "src/main.h"
+#include "src/log.h"
 
 /***********************************************************************************************//**
  * @addtogroup Application
@@ -134,8 +135,8 @@ void gecko_bgapi_classes_init_server_friend(void)
 	//gecko_bgapi_class_mesh_health_client_init();
 	//gecko_bgapi_class_mesh_health_server_init();
 	//gecko_bgapi_class_mesh_test_init();
-	gecko_bgapi_class_mesh_lpn_init();
-	//gecko_bgapi_class_mesh_friend_init();
+	//gecko_bgapi_class_mesh_lpn_init();
+	gecko_bgapi_class_mesh_friend_init();
 }
 
 
@@ -199,9 +200,18 @@ void gecko_main_init()
 void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 {
   switch (evt_id) {
-    case gecko_evt_system_boot_id:
+    case gecko_evt_system_boot_id: ;
       // Initialize Mesh stack in Node operation mode, wait for initialized event
-      gecko_cmd_mesh_node_init();
+      uint16_t result = gecko_cmd_mesh_node_init()->result;
+
+      if(result)
+      {
+    	  LOG_INFO("Could not init mesh");
+      }
+      else
+      {
+    	  LOG_INFO("Mesh Init done");
+      }
       break;
     case gecko_evt_mesh_node_initialized_id:
       if (!evt->data.evt_mesh_node_initialized.provisioned) {

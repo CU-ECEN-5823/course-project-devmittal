@@ -29,15 +29,17 @@ const uint8_t __mesh_dcd[] = {
     0xb0, 0xf0, /* Product ID = 0xf0b0 */
     0x34, 0x12, /* Version Number = 0x1234 */
     0x20, 0x00, /* Capacity of Replay Protection List = 0x0020 */
-    0x0b, 0x00, /* Features Bitmask = 0x000b */
+    0x07, 0x00, /* Features Bitmask = 0x0007 */
     /* Begin Primary Element */
         0x00, 0x00, /* Location = 0x0000 */
-        0x03, /* Number of SIG Models = 0x03 */
+        0x05, /* Number of SIG Models = 0x05 */
         0x00, /* Number of Vendor Models = 0x00 */
         /* Begin SIG Models */
         0x00, 0x00, /* Configuration Server */
         0x01, 0x10, /* Generic OnOff Client */
         0x00, 0x10, /* Generic OnOff Server */
+        0x02, 0x10, /* Generic Level Server */
+        0x00, 0x13, /* Light Lightness Server */
         /* End SIG Models */
         /* Begin Vendor Models */
         /* End Vendor Models */
@@ -52,7 +54,7 @@ const mesh_memory_config_t __mesh_memory_config = {
   .max_models = MESH_CFG_MAX_MODELS,
   .max_net_keys = MESH_CFG_MAX_NETKEYS,
   .max_appkeys = MESH_CFG_MAX_APPKEYS,
-  .max_devkeys = MESH_CFG_MAX_DEVKEYS,
+  .max_devkeys = 1,
   .max_friendships = MESH_CFG_MAX_FRIENDSHIPS,
   .max_app_binds = MESH_CFG_MAX_APP_BINDS,
   .max_subscriptions = MESH_CFG_MAX_SUBSCRIPTIONS,
