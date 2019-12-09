@@ -527,7 +527,7 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			case TIMER_ID_STOP_BUZZER:
 				//Stop buzzer
 				gpioBuzzer(0);
-				displayPrintf(DISPLAY_ROW_GASVALUE, "");
+				displayPrintf(DISPLAY_ROW_FLASH2, "");
 				displayPrintf(DISPLAY_ROW_FLAMEVALUE, "");
 		 }
 		 break;
