@@ -32,6 +32,8 @@
 #define BUZZER_COUNT_FLASH_ADDR	0x4004
 #define LAST_LIGHT_FLASH_ADDR	0x4008
 #define LAST_MOTION_FLASH_ADDR 	0x4010
+#define KITCHEN_ADDR			0x4011
+#define BEDROOM_ADDR			0x4013
 
 #define INITIAL_LIGHT_VALUE		50
 
@@ -54,10 +56,18 @@ static uint8 num_connections = 0;
 uint32_t buzzer_count;
 uint8_t last_lightness;
 uint8_t number_lpn_connected;
+int kitchen_client_addr;
+int bedroom_client_addr;
+
+uint16_t kitchen_client_addr_flash;
+uint16_t bedroom_client_addr_flash;
+uint8_t isNewProvision;
+
 
 void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt);
 void initiate_factory_reset(void);
 void init_mesh(void);
 void store_flash(int addr, uint32_t buzzer_val, uint8_t last_light_val);
+void load_addr(void);
 
 #endif /* SRC_MYGECKO_H_ */

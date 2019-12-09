@@ -54,17 +54,8 @@ static void onoff_request(uint16_t model_id,
                           uint16_t delay_ms,
                           uint8_t request_flags)
 {
-	if(client_addr == KITCHEN_NODE_ADDR) //handle flame alert
-	{
-		LOG_INFO("Flame alert received from kitchen node");
-		displayPrintf(DISPLAY_ROW_FLAMEVALUE, "FIRE!!!");
-		gpioBuzzer(1); //Turn on buzzer to indicate fire
-		gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_STOP_BUZZER, 1); //start timer to turn off buzzer after 2 seconds
-		buzzer_count++;
-
-		store_flash(BUZZER_COUNT_FLASH_ADDR, buzzer_count, 0);
-	}
-	else //handle motion sensor alert
+	LOG_INFO("Client Addr on/off: %d, bedroom addr: %d", client_addr, bedroom_client_addr_flash);
+	if(client_addr == bedroom_client_addr_flash) //handle motion sensor alert
 	{
 		LOG_INFO("Motion: %d", request->on_off);
 		LOG_INFO("Client Addr: %d", client_addr);
@@ -83,6 +74,17 @@ static void onoff_request(uint16_t model_id,
 			set_duty_cycle(0);
 			store_flash(LAST_MOTION_FLASH_ADDR, 0, 0);
 		}
+	}
+	else //handle flame alert
+	{
+		LOG_INFO("Flame alert received from kitchen node");
+		displayPrintf(DISPLAY_ROW_FLAMEVALUE, "FIRE!!!");
+		gpioBuzzer(1); //Turn on buzzer to indicate fire
+		gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_STOP_BUZZER, 1); //start timer to turn off buzzer after 2 seconds
+		buzzer_count++;
+
+		store_flash(BUZZER_COUNT_FLASH_ADDR, buzzer_count, 0);
+
 	}
 }
 
@@ -133,19 +135,8 @@ static void level_request(uint16_t model_id,
                               uint16_t delay_ms,
                               uint8_t request_flags)
 {
-	if(client_addr == KITCHEN_NODE_ADDR) //Handling kitchen node gas leak alert
-	{
-		LOG_INFO("Gas Level alert received from kitchen low power node: %d", request->level);
-		LOG_INFO("Addr of sender %d", client_addr);
-
-		displayPrintf(DISPLAY_ROW_GASVALUE, "Gas Leak: %d", request->level);
-		gpioBuzzer(1); //switch on buzzer
-		gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_STOP_BUZZER, 1); //start timer to switch off buzzer after 2 seconds
-		buzzer_count++;
-
-		store_flash(BUZZER_COUNT_FLASH_ADDR, buzzer_count, 0); //store buzzer count in flash
-	}
-	else //Handle light intensity values
+	LOG_INFO("Client Addr level request: %d, bedroom addr: %d", client_addr, bedroom_client_addr_flash);
+	if(client_addr == bedroom_client_addr_flash) //Handle light intensity values
 	{
 		uint8_t duty_cycle;
 		uint16_t lumen;
@@ -169,6 +160,19 @@ static void level_request(uint16_t model_id,
 		displayPrintf(DISPLAY_ROW_LIGHTVALUE, "Light Intensity: %d%%", last_lightness);
 
 		store_flash(LAST_LIGHT_FLASH_ADDR, 0, last_lightness);
+	}
+	else //Handling kitchen node gas leak alert
+	{
+		LOG_INFO("Gas Level alert received from kitchen low power node: %d", request->level);
+		LOG_INFO("Addr of sender %d", client_addr);
+
+		displayPrintf(DISPLAY_ROW_FLASH2, "Gas Leak: %d", request->level);
+		gpioBuzzer(1); //switch on buzzer
+		gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_STOP_BUZZER, 1); //start timer to switch off buzzer after 2 seconds
+		buzzer_count++;
+
+		store_flash(BUZZER_COUNT_FLASH_ADDR, buzzer_count, 0); //store buzzer count in flash
+
 	}
 }
 
@@ -231,6 +235,25 @@ void store_flash(int addr, uint32_t buzzer_val, uint8_t last_light_val)
 				LOG_INFO("PS save of last light value failed, code %x\r\n", pSave->result);
 			}
 			break;
+
+		case BEDROOM_ADDR: //Store bedroom address
+			pSave = gecko_cmd_flash_ps_save(addr, sizeof(uint8_t), (const uint8*)&buzzer_val);
+
+			if (pSave->result)
+			{
+				LOG_INFO("PS save of bedroom addr failed, code %x\r\n", pSave->result);
+			}
+			break;
+
+		case KITCHEN_ADDR: //store kitchen address
+			pSave = gecko_cmd_flash_ps_save(addr, sizeof(uint8_t), (const uint8*)&buzzer_val);
+
+			if (pSave->result)
+			{
+				LOG_INFO("PS save of kitchen addr failed, code %x\r\n", pSave->result);
+			}
+			break;
+
 	}
 }
 
@@ -262,6 +285,10 @@ void init_mesh(void)
 	mesh_lib_init(malloc,free,8);
 	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_generic_server_init());
 	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_friend_init());
+
+	/* If not newly provisioned, load client addr from flash */
+	if(!isNewProvision)
+		load_addr();
 
 	/* Load buzzer count data from flash */
 	pLoad = gecko_cmd_flash_ps_load(BUZZER_COUNT_FLASH_ADDR);
@@ -342,6 +369,42 @@ void initiate_factory_reset(void)
 }
 
 /*
+ * @func - load_addr
+ * @brief - Load client addr from flash
+ * @parameters - void
+ * @return - none
+ */
+void load_addr(void)
+{
+	struct gecko_msg_flash_ps_load_rsp_t* pLoad;
+
+	LOG_INFO("Loading data from flasg");
+
+	/* Load kitchen addr */
+	pLoad = gecko_cmd_flash_ps_load(KITCHEN_ADDR);
+	if (pLoad->result)
+	{
+		LOG_INFO("Failed to load kitchen addr from flash");
+	}
+	else
+	{
+		kitchen_client_addr_flash = (pLoad->value.data[0]);
+	}
+
+	/* Load bedroom addr */
+	pLoad = gecko_cmd_flash_ps_load(BEDROOM_ADDR);
+	if (pLoad->result)
+	{
+		LOG_INFO("Failed to load bedroom addr from flash");
+	}
+	else
+	{
+		bedroom_client_addr_flash = (pLoad->value.data[0]);
+		LOG_INFO("Bedroom addr from flash: %d", bedroom_client_addr_flash);
+	}
+}
+
+/*
  * @func - gecko_ecen5823_update
  * @brief - Handle BTMesh events
  * @parameters - evt - event to be handled
@@ -364,6 +427,7 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 	 		/* Set attributes to init device */
 			char name[20];
 
+			isNewProvision = 0;
 			uint8_t bedroom_lpn_addr[] = BEDROOM_LPN_BT_ADDRESS;
 			uint8_t kitchen_lpn_addr[] = KITCHEN_LPN_BT_ADDRESS;
 
@@ -389,7 +453,6 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		 if (evt->data.evt_mesh_node_initialized.provisioned)
 		 {
 			 LOG_INFO("Already provisioned\n");
-			 displayPrintf(DISPLAY_ROW_ACTION, "Provisioned");
 			 init_mesh();
 		 }
 		 break;
@@ -401,6 +464,7 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 	 case gecko_evt_mesh_node_provisioned_id:
 
+		 isNewProvision = 1;
 		 init_mesh();
 		 displayPrintf(DISPLAY_ROW_ACTION, "Provisioned");
 		 break;
@@ -472,7 +536,18 @@ void gecko_ecen5823_update(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 		 number_lpn_connected++;
 		 displayPrintf(DISPLAY_ROW_BTADDR3, "LPN Connected: %d", number_lpn_connected);
-		 LOG_INFO("evt gecko_evt_mesh_friend_friendship_established, lpn_address=%x\r\n", evt->data.evt_mesh_friend_friendship_established.lpn_address);
+
+		 /* if newly provisioned, store client addr in flash the first time */
+		 if(isNewProvision == 1)
+		 {
+				 LOG_INFO("Storing addr in memory, isNewProvision: %d", isNewProvision);
+				 bedroom_client_addr_flash = evt->data.evt_mesh_friend_friendship_established.lpn_address;
+				 store_flash(BEDROOM_ADDR, bedroom_client_addr_flash, 0);
+				 kitchen_client_addr_flash = KITCHEN_NODE_ADDR;
+				 store_flash(KITCHEN_ADDR, kitchen_client_addr_flash, 0);
+				 isNewProvision = 0;
+		 }
+		 LOG_INFO("evt gecko_evt_mesh_friend_friendship_established, lpn_address=%d\r\n", evt->data.evt_mesh_friend_friendship_established.lpn_address);
 		 break;
 
 	 case gecko_evt_mesh_friend_friendship_terminated_id:

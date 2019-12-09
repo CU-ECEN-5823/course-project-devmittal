@@ -20,7 +20,7 @@ int main(void)
 	/* Variable defining the blocked sleep mode
 	* Eg: sleepEM3 indicates that the system should be in EM2; EM3 and EM4 is blocked.
 	* Note: Ensure to cycle power (move switch to BAT and back to AEM) after uploading code when changing energy modes*/
-	const SLEEP_EnergyMode_t sleep_mode_blocked=sleepEM3;
+	const SLEEP_EnergyMode_t sleep_mode_blocked=sleepEM4;
 
 	// Initialize stack
 	gecko_main_init();
@@ -32,8 +32,9 @@ int main(void)
 
 	buzzer_count = 0; //Init buzzer counter to 0
 	number_lpn_connected = 0;
+	isNewProvision = 0;
 
-	timer_pwm(); //Function outputs PWM using TIMER module in a linear manner and sounds buzzer
+	timer_pwm(); //initialize timer
 
 	led_period = PERIOD;
 
@@ -52,8 +53,6 @@ int main(void)
 	letimerInit(comp0, comp1, sleep_mode_blocked);
 
 	displayInit();
-
-	//test_led(); //This outputs PWM using LETIMER. Duty cycle depends on comp1 value
 
 	/* Infinite loop */
 	while (1)
