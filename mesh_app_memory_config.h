@@ -22,7 +22,7 @@
 #ifndef _MESH_APP_MEMORY_CONFIG_H
 #define _MESH_APP_MEMORY_CONFIG_H
 
-#define MESH_CFG_MAX_DEVKEYS					1
+#define MESH_CFG_MAX_DEVKEYS 					1
 #define MESH_CFG_MAX_ELEMENTS                   1
 #define MESH_CFG_MAX_MODELS                     5
 #define MESH_CFG_MAX_APP_BINDS                  4

@@ -1,6 +1,8 @@
 /*
  * led.c
  *
+ *Function to control PWM signal provided to LED
+ *
  *  Created on: 18-Nov-2019
  *      Author: Devansh
  */
@@ -11,11 +13,24 @@
 #include "em_timer.h"
 #include "log.h"
 
-void set_duty_cycle(int duty_cycle)
+/*
+ * @func - set_duty_cycle
+ * @brief - Set timer compare buffer value relative to top value
+ * @parameters - duty_cycle - duty cycle of led
+ * @return - none
+ */
+void set_duty_cycle(uint8_t duty_cycle)
 {
-	TIMER_CompareBufSet(TIMER0, 0, TIMER_TopGet(TIMER0) * duty_cycle);
+	/* Set the value at which LED switches on relative to the top value */
+	TIMER_CompareBufSet(TIMER0, 0, (uint32_t)(TIMER_TopGet(TIMER0) * duty_cycle)/100);
 }
 
+/*
+ * @func - TIMER0_IRQHandler
+ * @brief - Function present only to test LED. Interrupt needs to be enabled
+ * @parameters - none
+ * @return - none
+ */
 void TIMER0_IRQHandler(void)
 {
   uint32_t compareValue;
@@ -61,10 +76,7 @@ void timer_pwm()
 	/* Set Top Value */
 	TIMER_TopSet(TIMER0, (CMU_ClockFreqGet(cmuClock_HFPER)/10000));
 
-	LOG_INFO("Timer value: %lu", (CMU_ClockFreqGet(cmuClock_HFPER)/10000));
-
 	/* Set compare value starting at 0 - it will be incremented in the interrupt handler */
-	//TIMER_CompareBufSet(TIMER0, 0, (CMU_ClockFreqGet(cmuClock_HFPER)/100000));
 	TIMER_CompareBufSet(TIMER0, 0, 0);
 
 	/* Select timer parameters */
@@ -83,7 +95,7 @@ void timer_pwm()
 		.sync       = false,
 	};
 
-	/* Enable overflow interrupt */
+	/* Uncomment to Enable overflow interrupt */
 	//TIMER_IntEnable(TIMER0, TIMER_IF_OF);
 
 	/* Enable TIMER0 interrupt vector in NVIC */
@@ -91,6 +103,4 @@ void timer_pwm()
 
 	/* Configure timer */
 	TIMER_Init(TIMER0, &timerInit);
-
-	//gpioBuzzer(1);
 }

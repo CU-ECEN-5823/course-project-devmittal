@@ -31,6 +31,7 @@ int main(void)
 	gpioInit();
 
 	buzzer_count = 0; //Init buzzer counter to 0
+	number_lpn_connected = 0;
 
 	timer_pwm(); //Function outputs PWM using TIMER module in a linear manner and sounds buzzer
 
